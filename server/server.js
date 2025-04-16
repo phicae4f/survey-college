@@ -1,75 +1,81 @@
 import express from "express";
 import cors from "cors";
-import mysql from "mysql";
+import { createUsersTables } from "./db.js";
+import { questionsRouter } from "./routes/questions.js";
+import { db } from "./db.js";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 const PORT = 8081;
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-const db = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "survey-college",
+createUsersTables();
+// app.use("/api/questions", questionsRouter)
+
+app.post("/api/register", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "Некорректный email" });
+    }
+
+    const [existing] = await db.query(
+      "SELECT id FROM students WHERE email = ?",
+      [email]
+    );
+
+    if (existing.length > 0) {
+      return res.status(403).json({ error: "Email уже зарегистрирован" });
+    }
+
+    await db.query(`INSERT INTO students (email) VALUES (?)`, [email]);
+
+    return  res.status(201).json({ success: true, email });
+  } catch (error) {
+    console.log("Ошибка регистрации: ", error);
+    return res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
 
-async function createUsersTables() {
+app.put("/api/register/:email", async (req, res) => {
   try {
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS students (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          email VARCHAR(255) NOT NULL UNIQUE,
-          code VARCHAR(6),
-          is_verified BOOLEAN DEFAULT FALSE,
-          course INT,
-          major VARCHAR(100),
-          academic_performance ENUM('отлично', 'хорошо', 'удовлетворительно', 'неудовлетворительно'),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+    const { course, major, academic_performance } = req.body;
+    const email = req.params.email;
 
-    // Таблица преподавателей
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS teachers (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(100) NOT NULL,
-          department VARCHAR(100) NOT NULL
-        )
-      `);
-
-    // Таблица вопросов
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS questions (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          text TEXT NOT NULL,
-          category VARCHAR(50) NOT NULL,
-          scale_description VARCHAR(200) DEFAULT '0 - Затрудняюсь ответить, 1 - Полностью не согласна/согласен, 2 - Скорее не согласна/согласен, 3 - Отчасти согласна/согласен отчасти нет, 4 - Скорее согласна/согласен, 5 - Полностью согласна/согласен'
-        )
-      `);
-
-    // Таблица ответов (изменили тип answer на 0-5)
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS survey_responses (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          student_id INT NOT NULL,
-          teacher_id INT NOT NULL,
-          question_id INT NOT NULL,
-          answer ENUM('0', '1', '2', '3', '4', '5') NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (student_id) REFERENCES students(id),
-          FOREIGN KEY (teacher_id) REFERENCES teachers(id),
-          FOREIGN KEY (question_id) REFERENCES questions(id)
-        )
-      `);
-
-    console.log("Все таблицы успешно созданы/проверены");
+    await db.query(
+      `UPDATE students 
+       SET course = ?, major = ?, academic_performance = ?
+       WHERE email = ?`,
+      [course, major, academic_performance, email]
+    );
+    return res.status(500).json({ success: true, message: "Профиль обновлен" });
   } catch (error) {
-    console.error("Ошибка при создании таблиц:", err);
+    console.error("Ошибка обновления:", error);
+    return res.status(500).json({ error: "Ошибка сервера" });
   }
-}
+});
 
-createUsersTables();
+app.get("/api/students/:email", async (req, res) => {
+  try {
+    const [student] = await db.query(
+      "SELECT email, course, major, academic_performance FROM students WHERE email = ?",
+      [req.params.email]
+    );
+
+    if (student.length === 0) {
+      return res.status(404).json({ error: "Студент не найден" });
+    }
+
+    return res.json(student[0]);
+  } catch (error) {
+    console.error("Ошибка получения данных:", error);
+    return res.status(500).json({ error: "Ошибка сервера" });
+  }
+});
 
 app.listen(PORT, () => {
   console.log("server is running on port: ", PORT);
