@@ -1,23 +1,51 @@
 import { Router } from "express";
 import { db } from "../db.js";
+import jwt from "jsonwebtoken";
 
 export const userRoutes = new Router();
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+export const tokenBlackList = new Set();
+
+const generateToken = (email) => {
+  return jwt.sign({ email }, "jwt-secret-key", { expiresIn: "1h" });
+};
+
+const authenticateTokenMiddleware = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    return res.sendStatus(401);
+  }
+
+  if (tokenBlackList.has(token)) {
+    return res
+      .status(401)
+      .json({ error: "Токен истёк. Необходимо авторизоваться" });
+  }
+  jwt.verify(token, "jwt-secret-key", (err, user) => {
+    if (err) {
+      return res.sendStatus(403);
+    }
+    req.user = user;
+    next();
+  });
+};
+
 userRoutes.post("/", async (req, res) => {
   try {
-    const { email, course_id, performance_level_id, specialization_id } = req.body;
+    const { email, course_id, performance_level_id, specialization_id } =
+      req.body;
 
     if (!email || !isValidEmail(email)) {
       return res.status(400).json({ error: "Некорректный email" });
     }
 
-    // Исправленные запросы с правильной обработкой результатов
-    const [courseRows] = await db.query(
-      "SELECT id FROM courses WHERE id = ?",
-      [course_id]
-    );
+    const [courseRows] = await db.query("SELECT id FROM courses WHERE id = ?", [
+      course_id,
+    ]);
     const [performanceRows] = await db.query(
       "SELECT id FROM performance_levels WHERE id = ?",
       [performance_level_id]
@@ -52,17 +80,26 @@ userRoutes.post("/", async (req, res) => {
       [email, course_id, performance_level_id, specialization_id]
     );
 
-    return res
-      .status(201)
-      .json({ success: true, email, message: "Регистрация успешно завершена" });
+    const token = generateToken(email);
+
+    return res.status(201).json({
+      success: true,
+      email,
+      token,
+      message: "Регистрация успешно завершена",
+    });
   } catch (error) {
     console.log("Ошибка регистрации: ", error);
     return res.status(500).json({ error: "Ошибка сервера" });
   }
 });
 
-userRoutes.put("/:email", async (req, res) => {
+userRoutes.put("/:email", authenticateTokenMiddleware, async (req, res) => {
   try {
+    if (req.user.email !== req.params.email) {
+      return res.status(403).json({ error: "Нет доступа" });
+    }
+
     const email = req.params.email;
     const { course_id, performance_level_id, specialization_id } = req.body;
 
@@ -70,37 +107,32 @@ userRoutes.put("/:email", async (req, res) => {
       return res.status(400).json({ error: "Некорректный email" });
     }
 
-    const courseExists = await db.query(
-      "SELECT id FROM courses WHERE id = ?",
-      [course_id]
-    );
-    const performanceExists = await db.query(
+    const [[course]] = await db.query("SELECT id FROM courses WHERE id = ?", [
+      course_id,
+    ]);
+    const [[performance]] = await db.query(
       "SELECT id FROM performance_levels WHERE id = ?",
       [performance_level_id]
     );
-    const specializationExists = await db.query(
+    const [[specialization]] = await db.query(
       "SELECT id FROM specializations WHERE id = ?",
       [specialization_id]
     );
 
-    if (
-      !courseExists[0].length ||
-      !performanceExists[0].length ||
-      !specializationExists[0].length
-    ) {
+    if (!course || !performance || !specialization) {
       return res
         .status(400)
         .json({ error: "Неверные данные курса, успеваемости или направления" });
     }
 
-    const result = await db.query(
+    const [result] = await db.query(
       `UPDATE students 
        SET course_id = ?, performance_level_id = ?, specialization_id = ?
        WHERE email = ?`,
       [course_id, performance_level_id, specialization_id, email]
     );
 
-    if (result[0].affectedRows === 0) {
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: "Студент не найден" });
     }
 
@@ -111,29 +143,51 @@ userRoutes.put("/:email", async (req, res) => {
   }
 });
 
-userRoutes.get("/:email", async (req, res) => {
+userRoutes.get("/:email", authenticateTokenMiddleware, async (req, res) => {
   try {
+    if (req.user?.email !== req.params.email) {
+      return res.status(403).json({ error: "Нет доступа" });
+    }
+
     const { email } = req.params;
     if (!isValidEmail(email)) {
       return res.status(400).json({ error: "Некорректный email" });
     }
-    const student = await db.query(
-      `SELECT s.email, c.number AS course, sp.name AS specialization, pl.level AS performance_level
-      FROM students s
-      JOIN courses c ON s.course_id = c.id
-      JOIN specializations sp ON s.specialization_id = sp.id
-      JOIN performance_levels pl ON s.performance_level_id = pl.id
-      WHERE s.email = ?`,
+
+    const [[student]] = await db.query(
+      `SELECT s.email, c.number AS course, sp.name AS specialization, 
+              pl.level AS performance_level
+       FROM students s
+       JOIN courses c ON s.course_id = c.id
+       JOIN specializations sp ON s.specialization_id = sp.id
+       JOIN performance_levels pl ON s.performance_level_id = pl.id
+       WHERE s.email = ?`,
       [email]
     );
 
-    if (student[0].length === 0) {
+    if (!student) {
       return res.status(404).json({ error: "Студент не найден" });
     }
 
-    return res.json(student[0][0]);
+    return res.json({
+      email: student.email,
+      course: student.course,
+      specialization: student.specialization,
+      performance_level: student.performance_level,
+    });
   } catch (error) {
     console.error("Ошибка получения данных:", error);
     return res.status(500).json({ error: "Ошибка сервера" });
   }
+});
+
+userRoutes.post("/logout", authenticateTokenMiddleware, (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (token) {
+    tokenBlackList.add(token);
+  }
+
+  return res.json({ success: true, message: "Успешный выход из системы" });
 });

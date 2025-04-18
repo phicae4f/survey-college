@@ -5,7 +5,7 @@ export const db = mysql.createPool({
   user: "root",
   password: "",
   database: "survey-college1",
-})
+});
 
 export async function createTables() {
   try {
