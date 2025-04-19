@@ -191,3 +191,29 @@ userRoutes.post("/logout", authenticateTokenMiddleware, (req, res) => {
 
   return res.json({ success: true, message: "Успешный выход из системы" });
 });
+
+userRoutes.post("/login", async (req, res) => {
+  try {
+    const {email} = req.body
+
+    const [user] = await db.query(
+     "SELECT email FROM students WHERE email = ?", 
+     [email] 
+    )
+
+    if(!user) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    const token = generateToken(email)
+    return res.json({
+      success: true,
+      email,
+      token,
+      message: "Вы успешно вошли в аккаунт!"
+    })
+  } catch (error) {
+    console.error("Ошибка входа: ", error);
+    return res.status(500).json({ error: "Ошибка сервера" });
+  }
+})

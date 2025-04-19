@@ -87,29 +87,6 @@ export const updateStudent = async (
   }
 };
 
-export const getStudent = async (email: string): Promise<StudentProfile> => {
-  try {
-    const token = getToken();
-    if (!token) {
-      throw new Error("Необходимо авторизоваться");
-    }
-
-    const res = await fetch(`http://localhost:8081/api/students/${email}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!res.ok) {
-      throw new Error(await res.text());
-    }
-    return await res.json();
-  } catch (error) {
-    console.error("Ошибка получения профиля: ", error);
-    throw error;
-  }
-};
-
 export const logoutStudent = async (): Promise<{
   success: boolean;
   message: string;
@@ -137,3 +114,49 @@ export const logoutStudent = async (): Promise<{
     throw error;
   }
 };
+
+
+export const getStudent = async (email: string): Promise<StudentProfile> => {
+  try {
+    const token = getToken();
+    if (!token) {
+      throw new Error("Необходимо авторизоваться");
+    }
+
+    const res = await fetch(`http://localhost:8081/api/students/${email}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(await res.text());
+    }
+    return await res.json();
+  } catch (error) {
+    console.error("Ошибка получения профиля: ", error);
+    throw error;
+  }
+};
+
+
+export const loginStudent = async (email: string): Promise<AuthResponse> => {
+  try {
+    const res = await fetch("http://localhost:8081/api/students/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({email})
+    })
+
+    if(!res.ok) {
+      throw new Error(await res.text());
+    }
+
+    return res.json()
+  } catch (error) {
+    console.error("Ошибка входа: ", error);
+    throw error;
+  }
+}
