@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import { useState } from "react";
+import { courses, specializations, performanceLevels } from "../data/data";
 
 interface FormData {
   email: string;
@@ -20,27 +21,6 @@ interface FormData {
   performanceLevel: string;
 }
 
-const courses = [1, 2, 3, 4, 5];
-const specializations = [
-  "Строительство",
-  "Прикладная информатика",
-  "Информационная безопасность",
-  "Землеустройство и кадастр",
-  "Экономика (Бухучет)",
-  "Экономика (Налоги и налогообложение)",
-  "Экономика (Финансы и кредит)",
-  "Экономика (Honors)",
-  "Менеджмент",
-  "Бизнес-информатика",
-  "Торговое дело",
-  "Юриспруденция",
-  "Лингвистика",
-];
-const performanceLevels = [
-  'Учусь только на "хорошо" и "отлично"',
-  'У меня в основном "хорошо" и "отлично", но есть и "удовлетворительно"',
-  'У меня в основном "удовлетворительные" оценки',
-];
 export default function RegisterPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const { login } = useAuth();
