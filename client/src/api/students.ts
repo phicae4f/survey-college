@@ -74,6 +74,7 @@ export const updateStudent = async (
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify(data),
     });
@@ -153,7 +154,6 @@ export const loginStudent = async (email: string): Promise<AuthResponse> => {
     if(!res.ok) {
       throw new Error(await res.text());
     }
-
     return res.json()
   } catch (error) {
     console.error("Ошибка входа: ", error);

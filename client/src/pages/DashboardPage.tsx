@@ -8,6 +8,8 @@ import {
   Stack,
   CircularProgress,
   Alert,
+  TextField,
+  MenuItem,
 } from "@mui/material";
 import { getStudent, logoutStudent, updateStudent } from "../api/students";
 import { courses, specializations, performanceLevels } from "../data/data";
@@ -28,14 +30,34 @@ interface StudentProfileUpdate {
 
 export default function DashboardPage() {
   const { logout, userEmail } = useAuth();
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditing, setIsEditing] = useState(false);
+
+  const getErrorMessage = (error: unknown) => {
+    try {
+      if (typeof error === "string") {
+        const parsed = JSON.parse(error);
+        return parsed.error || parsed.message || error;
+      }
+      if (error instanceof Error) {
+        try {
+          const parsed = JSON.parse(error.message);
+          return parsed.error || parsed.message || error.message;
+        } catch {
+          return error.message;
+        }
+      }
+      return "Неизвестная ошибка";
+    } catch {
+      return "Неизвестная ошибка";
+    }
+  };
 
   const {
     data: profile,
     isPending,
     isError,
     error,
-    refetch
+    refetch,
   } = useQuery<StudentProfile>({
     queryKey: ["profile", userEmail],
     queryFn: () => getStudent(userEmail),
@@ -45,31 +67,32 @@ export default function DashboardPage() {
 
   const [editData, setEditData] = useState({
     course: 1,
-    specialization: '',
-    performance_level: ''
+    specialization: "",
+    performance_level: "",
   });
 
   useEffect(() => {
-    if(profile) {
+    if (profile) {
       setEditData({
         course: profile.course,
         specialization: profile.specialization,
         performance_level: profile.performance_level,
       });
     }
-  }, [profile])
+  }, [profile]);
 
   const updateMutation = useMutation({
-    mutationFn: () => 
+    mutationFn: () =>
       updateStudent(userEmail, {
         course_id: editData.course,
         specialization_id: specializations.indexOf(editData.specialization) + 1,
-        performance_level_id: performanceLevels.indexOf(editData.performance_level) + 1
+        performance_level_id:
+          performanceLevels.indexOf(editData.performance_level) + 1,
       }),
-      onSuccess: () => {
-        refetch()
-        setIsEditing(false)
-      }
+    onSuccess: () => {
+      refetch();
+      setIsEditing(false);
+    },
   });
 
   const handleLogout = async () => {
@@ -82,14 +105,28 @@ export default function DashboardPage() {
   };
 
   const handleEdit = () => {
-    setIsEditing(true)
-  }
+    setIsEditing(true);
+  };
 
   const handleSave = () => {
-    updateMutation.mutate()
-  }
+    updateMutation.mutate();
+  };
 
-  
+  const handleCancel = () => {
+    setIsEditing(false);
+    if (profile) {
+      setEditData({
+        course: profile.course,
+        specialization: profile.specialization,
+        performance_level: profile.performance_level,
+      });
+    }
+  };
+
+  const handleChange = (field: string, value: any) => {
+    setEditData((prev) => ({ ...prev, [field]: value }));
+  };
+
   if (isPending) {
     return (
       <Box
@@ -108,7 +145,9 @@ export default function DashboardPage() {
   if (isError) {
     return (
       <Box sx={{ maxWidth: 600, mx: "auto", mt: 4, p: 3 }}>
-        <Alert severity="error">Ошибка загрузки профиля: {error.message}</Alert>
+        <Alert severity="error">
+          Ошибка загрузки профиля: {JSON.parse(error.message).error}
+        </Alert>
         <Button
           variant="contained"
           sx={{ mt: 2 }}
@@ -139,21 +178,101 @@ export default function DashboardPage() {
           <Typography>
             <strong>Email:</strong> {profile.email}
           </Typography>
-          <Typography>
-            <strong>Курс:</strong> {profile.course}
-          </Typography>
-          <Typography>
-            <strong>Специализация:</strong> {profile.specialization}
-          </Typography>
-          <Typography>
-            <strong>Уровень знаний:</strong> {profile.performance_level}
-          </Typography>
+
+          {isEditing ? (
+            <>
+              <TextField
+                select
+                fullWidth
+                label="Курс"
+                value={editData.course}
+                onChange={(e) => handleChange("course", Number(e.target.value))}
+              >
+                {courses.map((course) => (
+                  <MenuItem key={course} value={course}>
+                    {course}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                select
+                fullWidth
+                label="Специализация"
+                value={editData.specialization}
+                onChange={(e) => handleChange("specialization", e.target.value)}
+              >
+                {specializations.map((spec) => (
+                  <MenuItem key={spec} value={spec}>
+                    {spec}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <TextField
+                select
+                fullWidth
+                label="Уровень знаний"
+                value={editData.performance_level}
+                onChange={(e) =>
+                  handleChange("performance_level", e.target.value)
+                }
+              >
+                {performanceLevels.map((level) => (
+                  <MenuItem key={level} value={level}>
+                    {level}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </>
+          ) : (
+            <>
+              <Typography>
+                <strong>Курс:</strong> {profile.course}
+              </Typography>
+              <Typography>
+                <strong>Специализация:</strong> {profile.specialization}
+              </Typography>
+              <Typography>
+                <strong>Уровень знаний:</strong> {profile.performance_level}
+              </Typography>
+            </>
+          )}
         </Stack>
       </Paper>
+
+      {isEditing ? (
+        <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+          <Button
+            variant="contained"
+            onClick={handleSave}
+            disabled={updateMutation.isPending}
+          >
+            {updateMutation.isPending ? (
+              <CircularProgress size={24} />
+            ) : (
+              "Сохранить"
+            )}
+          </Button>
+          <Button variant="outlined" onClick={handleCancel}>
+            Отмена
+          </Button>
+        </Box>
+      ) : (
+        <Button variant="contained" onClick={handleEdit} sx={{ mb: 2 }}>
+          Редактировать профиль
+        </Button>
+      )}
 
       <Button variant="contained" color="error" onClick={handleLogout}>
         Выйти
       </Button>
+
+      {updateMutation.isError && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          Ошибка при обновлении: {getErrorMessage(updateMutation.error)}
+        </Alert>
+      )}
     </Box>
   );
 }

@@ -11,9 +11,15 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({children}: {children: ReactNode}) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false)
-    const [userEmail, setUserEmail] = useState<string>("")
-    const [token, setToken] = useState<string | null>(null)
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        return localStorage.getItem("token") !== null
+    })
+    const [userEmail, setUserEmail] = useState(() => {
+        return localStorage.getItem("email") || ""
+    })
+    const [token, setToken] = useState(() => {
+        return localStorage.getItem("token")
+    })
 
     const navigate = useNavigate()
 
@@ -22,13 +28,16 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
         setUserEmail(email)
         setToken(token)
         localStorage.setItem("token", token)
+        localStorage.setItem("email", email)
         navigate("/dashboard")
     }
 
     const logout = () => {
         setIsAuthenticated(false)
+        setUserEmail("")
         setToken(null)
         localStorage.removeItem("token")
+        localStorage.removeItem("email")
         navigate("/login")
     }
 
