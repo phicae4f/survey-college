@@ -97,6 +97,16 @@ export async function createTables() {
 )
             `);
 
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS admins (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    is_super_admin BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+      `)
+
     console.log("Все таблицы успешно созданы/проверены");
   } catch (error) {
     console.error("Ошибка при создании таблиц:", error);

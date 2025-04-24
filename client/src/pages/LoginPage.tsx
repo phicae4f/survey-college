@@ -21,7 +21,7 @@ export default function LoginPage() {
   const { mutate, isPending } = useMutation({
     mutationFn: loginStudent,
     onSuccess: (data) => {
-      login(data.email, data.token);
+      login(data.email, data.token, "student");
     },
     onError: (error) => {
       setFormError(JSON.parse(error.message).error);

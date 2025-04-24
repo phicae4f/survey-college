@@ -33,7 +33,7 @@ export default function RegisterPage() {
   const { mutate, isPending} = useMutation({
     mutationFn: registerStudent,
     onSuccess: (data) => {
-      login(data.email, data.token);
+      login(data.email, data.token, "student");
     },
     onError: (error) => {
       setFormError(JSON.parse(error.message).error)

@@ -1,12 +1,15 @@
-import { Navigate } from "react-router-dom"
+import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 
-const ProtectedRoute = ({children}: {children: JSX.Element}) => {
-    const {isAuthenticated} = useAuth()
-    const token = localStorage.getItem("token")
+const ProtectedRoute = ({children, allowedRoles = ['student', 'admin', 'super_admin']}: { 
+    children: JSX.Element,
+    allowedRoles?: ('student' | 'admin' | 'super_admin')[] 
+  }) => {
+    const {isAuthenticated, role} = useAuth()
+    const location = useLocation()
 
-    if(!isAuthenticated && !token) {
-        return <Navigate to="/login" replace />
+    if(!isAuthenticated || !role ||!allowedRoles.includes(role)) {
+        return <Navigate to="/login" state={{from: location}} replace />
     }
 
     return children
