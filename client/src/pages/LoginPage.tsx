@@ -71,6 +71,12 @@ export default function LoginPage() {
             Зарегистрироваться
           </Link>
         </Typography>
+        <Typography sx={{ mt: 2 }}>
+          администратор{" "}
+          <Link component={RouterLink} to="/admin/login">
+            Войти
+          </Link>
+        </Typography>
       </form>
     </Box>
   );

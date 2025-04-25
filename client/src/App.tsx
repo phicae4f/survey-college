@@ -7,7 +7,8 @@ import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardPage from "./pages/DashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
-
+import AdminLoginPage from "./pages/AdminLoginPage";
+import AdminRegisterPage from "./pages/AdminRegisterPage";
 
 const queryClient = new QueryClient();
 function App() {
@@ -20,6 +21,15 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route
+              path="/admin/register"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <AdminRegisterPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/admin/login" element={<AdminLoginPage />} />
+            <Route
               path="/dashboard"
               element={
                 <ProtectedRoute allowedRoles={["student"]}>
@@ -27,12 +37,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/admin/dashboard"
-            element={
-              <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                <AdminDashboardPage />
-              </ProtectedRoute>
-            } />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                  <AdminDashboardPage />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </AuthProvider>
       </BrowserRouter>

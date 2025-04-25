@@ -19,12 +19,22 @@ const salt = 10;
 //     })
 // }
 
+// const email = "admin@gmail.com"
+// const notPassword = "$//admin__##"
+// const hash = await bcrypt.hash(notPassword, salt)
+
+// await db.query(
+//   `INSERT INTO admins (email, password_hash, is_super_admin)
+//   VALUES (?, ?, TRUE)`,
+//   [email, hash]
+// )
+
 adminRoutes.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const [[admin]] = await db.query("SELECT * FROM admins WHERE email = ?", [
-      email,
+    const [[admin]] = await db.query("SELECT * FROM `admins` WHERE `email` = ?", [
+      email
     ]);
 
     if (!admin) {
@@ -66,7 +76,7 @@ adminRoutes.post("/register", async (req, res) => {
 
     const decoded = jwt.verify(token, "jwt-secret-key");
     const [[superAdmin]] = await db.query(
-      "SELECT is_super_admin FROM admins WHERE email = ?",
+      "SELECT `is_super_admin` FROM `admins` WHERE `email` = ?",
       [decoded.email]
     );
 
@@ -79,7 +89,7 @@ adminRoutes.post("/register", async (req, res) => {
     }
 
     const [[existingAdmin]] = await db.query(
-        "SELECT id FROM admins WHERE email = ?",
+        "SELECT `id` FROM `admins` WHERE `email` = ?",
         [email]
       );
       if (existingAdmin) {
@@ -87,11 +97,11 @@ adminRoutes.post("/register", async (req, res) => {
       }
 
     const hash = await bcrypt.hash(password, salt);
-    await db.query("INSERT INTO admins (email, password_hash) VALUES (?, ?)", [
+    await db.query("INSERT INTO `admins` (`email`, `password_hash`) VALUES (?, ?)", [
       email,
       hash,
     ]);
-    return res.json({ success: true, message: "Админ зарегистрирован", email });
+    return res.json({ success: true, message: "Админ зарегистрирован", email});
   } catch (error) {
     console.error("Ошибка регистрации админа:", error);
     return res.status(500).json({ error: "Ошибка сервера" });

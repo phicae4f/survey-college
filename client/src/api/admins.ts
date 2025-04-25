@@ -14,8 +14,10 @@ type RegisterAdminResponse = {
 };
 
 export const loginAdmin = async (
-  email: string,
-  password: string
+  data: {
+    email: string,
+    password: string
+  }
 ): Promise<LoginAdminResponse> => {
   try {
     const res = await fetch("http://localhost:8081/api/admin/login", {
@@ -23,7 +25,7 @@ export const loginAdmin = async (
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(data),
     });
     if (!res.ok) {
       throw new Error(await res.text());
@@ -36,8 +38,10 @@ export const loginAdmin = async (
 };
 
 export const registerAdmin = async (
-  email: string,
-  password: string
+  data: {
+    email: string,
+    password: string
+  }
 ): Promise<RegisterAdminResponse> => {
   try {
     const token = localStorage.getItem("token");
@@ -48,9 +52,9 @@ export const registerAdmin = async (
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        "Authorization": `Bearer ${token}`,
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error(await res.text());
     return await res.json();
