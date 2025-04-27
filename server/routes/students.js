@@ -217,3 +217,32 @@ userRoutes.post("/login", async (req, res) => {
     return res.status(500).json({ error: "Ошибка сервера" });
   }
 })
+
+userRoutes.get("/:studentId/test-status", async (req, res) => {
+  try {
+    const {studentId} = req.params
+    const [[testStatus]] = await db.query(
+      'SELECT test_passed FROM student_tests WHERE student_id = ?',
+      [studentId]
+    )
+    res.json({hasPassedTest: !!testStatus?.test_passed})
+  } catch (error) {
+    console.error('Error checking test status:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+})
+
+userRoutes.post("/:studentId/complete-test", async (req, res) => {
+  try {
+    const {studentId} = req.params
+    await db.query(
+      'INSERT INTO student_tests (student_id, test_passed) VALUES (?, true) ' +
+      'ON DUPLICATE KEY UPDATE test_passed = true',
+      [studentId]
+    )
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error marking test as completed:', error);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+})

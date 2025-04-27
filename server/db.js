@@ -105,7 +105,18 @@ export async function createTables() {
     is_super_admin BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-      `)
+      `);
+
+await db.query(`
+  CREATE TABLE IF NOT EXISTS student_tests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    test_passed BOOLEAN DEFAULT FALSE,
+    passed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_student_test (student_id),
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+  )
+`);
 
     console.log("Все таблицы успешно созданы/проверены");
   } catch (error) {
