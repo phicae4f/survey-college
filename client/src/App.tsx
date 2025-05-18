@@ -1,4 +1,4 @@
-import "./App.css";
+import "./App.scss";
 import { AuthProvider } from "./context/AuthContext";
 import RegisterPage from "./pages/RegisterPage";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -9,6 +9,9 @@ import DashboardPage from "./pages/DashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminRegisterPage from "./pages/AdminRegisterPage";
+import TestPage from "./pages/TestPage";
+import { MainLayout } from "./components/MainLayout";
+import { AuthForm } from "./components/AuthForm";
 
 const queryClient = new QueryClient();
 function App() {
@@ -32,17 +35,31 @@ function App() {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute allowedRoles={["student"]}>
-                  <DashboardPage />
-                </ProtectedRoute>
+                <MainLayout>
+                  <ProtectedRoute allowedRoles={["student"]}>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                </MainLayout>
               }
             />
             <Route
               path="/admin/dashboard"
               element={
-                <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
-                  <AdminDashboardPage />
-                </ProtectedRoute>
+                <MainLayout>
+                  <ProtectedRoute allowedRoles={["admin", "super_admin"]}>
+                    <AdminDashboardPage />
+                  </ProtectedRoute>
+                </MainLayout>
+              }
+            />
+            <Route
+              path="/test"
+              element={
+                <MainLayout>
+                  <ProtectedRoute allowedRoles={["student"]}>
+                    <TestPage />
+                  </ProtectedRoute>
+                </MainLayout>
               }
             />
           </Routes>

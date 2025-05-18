@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { JSX } from "react"
 
 const ProtectedRoute = ({children, allowedRoles = ['student', 'admin', 'super_admin']}: { 
     children: JSX.Element,

@@ -1,0 +1,84 @@
+@use "../global/variables" as *;
+
+.auth-form  {
+  position: absolute;
+  background-color: $color-white-50;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+  width: 35vw;
+  min-height: 35vh;
+  padding: 4rem 2.5rem;
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  &__icon {
+    position: absolute;
+    top: -80px;
+    background-color: #16316b;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    padding: 20px;
+    fill: white;
+    transition: 0.3s ease-in-out;
+  }
+
+  &__fields {
+    width: 100%;
+  }
+
+  &__btn {
+    font-family: $ff-play;
+    width: 100%;
+    padding: 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.6rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+
+    &:hover, &:focus  {
+      color: $color-perano;
+      box-shadow: #16316b;
+      transition: 0.3s ease-in-out;
+    }
+  }
+
+  &__links {
+    width: 100%;
+    display: flex;
+    gap: 60px;
+    justify-content: center;
+    color: rgb(60, 88, 150);
+    font-size: 1.2rem;
+  }
+
+  &__link:hover, &__links:focus {
+    color: #16316b;
+    transition: 0.3s ease-in-out;
+  }
+
+
+  &__error {
+    color: #942323;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    display: block;
+  }
+
+  &__error-message {
+    color: #942323;
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+  }
+
+}
+
+

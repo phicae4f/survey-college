@@ -246,3 +246,17 @@ userRoutes.post("/:studentId/complete-test", async (req, res) => {
     res.status(500).json({ error: 'Ошибка сервера' });
   }
 })
+
+userRoutes.get("/get-id", async (req, res) => {
+  try {
+    const {email} = req.query
+    const [[student]] = await db.query(
+      "SELECT id FROM students WHERE email = ?",
+      [email]
+    )
+    res.json({id: student?.id || null})
+  } catch (error) {
+    console.error("Error getting student ID:", error);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
+})

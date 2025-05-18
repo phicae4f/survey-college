@@ -14,6 +14,7 @@ import {
 import { getStudent, logoutStudent, updateStudent } from "../api/students";
 import { courses, specializations, performanceLevels } from "../data/data";
 import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 interface StudentProfile {
   email: string;
@@ -31,6 +32,8 @@ interface StudentProfileUpdate {
 export default function DashboardPage() {
   const { logout, userEmail } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate()
+  const {hasPassedTest} = useAuth()
 
   const getErrorMessage = (error: unknown) => {
     try {
@@ -155,6 +158,7 @@ export default function DashboardPage() {
         >
           Попробовать снова
         </Button>
+        <Link to="/login">Назад</Link>
       </Box>
     );
   }
@@ -168,6 +172,7 @@ export default function DashboardPage() {
   }
 
   return (
+<>
     <Box sx={{ maxWidth: 600, mx: "auto", mt: 4, p: 3 }}>
       <Typography variant="h4" gutterBottom>
         Личный кабинет
@@ -274,5 +279,30 @@ export default function DashboardPage() {
         </Alert>
       )}
     </Box>
+    <Paper elevation={3} sx={{ p: 3, mb: 3, mt: 3 }}>
+  <Typography variant="h6" gutterBottom>
+    Тестирование
+  </Typography>
+  
+  {hasPassedTest ? (
+    <Alert severity="success">
+      Вы уже прошли тестирование. Повторное прохождение недоступно.
+    </Alert>
+  ) : (
+    <>
+      <Typography paragraph>
+        Доступно обязательное тестирование. Пройти можно только один раз.
+      </Typography>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => navigate("/test")}
+        sx={{ mt: 1 }}
+      >
+        Начать тестирование
+      </Button>
+    </>
+  )}
+</Paper></>
   );
 }

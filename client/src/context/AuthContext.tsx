@@ -12,12 +12,15 @@ type AuthContextType = {
   ) => void;
   logout: () => void;
   userEmail: string;
+  userId: number | null;
+  hasPassedTest: boolean;
+  checkTestStatus: () => Promise<void>;
+  markTestAsPassed: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-
   const [state, setState] = useState(() => ({
     isAuthenticated: localStorage.getItem("token") !== null,
     userEmail: localStorage.getItem("email") || "",
@@ -27,11 +30,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       | "super_admin"
       | null,
     token: localStorage.getItem("token"),
+    userId: localStorage.getItem("userId")
+      ? parseInt(localStorage.getItem("userId")!)
+      : null,
+    hasPassedTest: false,
   }));
 
   const navigate = useNavigate();
 
-  const login = (
+  const checkTestStatus = async () => {
+    if (state.role !== "student" || !state.userId) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/students/${state.userId}/test-status`);
+      const data = await res.json();
+      setState((prev) => ({ ...prev, hasPassedTest: data.hasPassedTest }));
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const markTestAsPassed = async () => {
+    if (!state.userId) {
+      return;
+    }
+    try {
+      await fetch(`/api/students/${state.userId}/complete-test`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${state.token}`,
+        },
+      });
+      setState((prev) => ({ ...prev, hasPassedTest: true }));
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  };
+  const login = async (
     email: string,
     token: string,
     role: "student" | "admin" | "super_admin"
@@ -40,17 +78,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("email", email);
     localStorage.setItem("role", role);
 
-    setState({
-        isAuthenticated: true,
-        userEmail: email,
-        role,
-        token
-    })
+    let userId: number | null = null;
+    let hasPassedTest = false;
 
-    if(role === "student"){
-        navigate("/dashboard");
-    }else if(role === 'admin' || role === 'super_admin') {
-        navigate("/admin/dashboard");
+    if (role === "student") {
+      try {
+        const res = await fetch(
+          `/api/students/get-id?email=${encodeURIComponent(email)}`
+        );
+        const data = await res.json();
+
+        if (data.id) {
+          userId = data.id;
+          localStorage.setItem("userId", userId.toString());
+
+          const testStatusRes = await fetch(
+            `/api/students/${userId}/test-status`
+          );
+          const testStatusData = await testStatusRes.json();
+          hasPassedTest = testStatusData.hasPassedTest;
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    setState({
+      isAuthenticated: true,
+      userEmail: email,
+      role,
+      token,
+      userId,
+      hasPassedTest,
+    });
+
+    if (role === "student") {
+      navigate("/dashboard");
+    } else if (role === "admin" || role === "super_admin") {
+      navigate("/admin/dashboard");
     }
   };
 
@@ -58,19 +123,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("email");
     localStorage.removeItem("role");
+    localStorage.removeItem("userId");
 
     setState({
-        isAuthenticated: false,
-        userEmail: "",
-        role: null,
-        token: null
-    })
+      isAuthenticated: false,
+      userEmail: "",
+      role: null,
+      token: null,
+      userId: null,
+      hasPassedTest: false,
+    });
     navigate("/login");
   };
 
   return (
     <AuthContext.Provider
-      value={{ ...state, login, logout}}
+      value={{ ...state, login, logout, checkTestStatus, markTestAsPassed }}
     >
       {children}
     </AuthContext.Provider>
